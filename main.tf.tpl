@@ -1,5 +1,5 @@
 # Security Group Id: 
-#   sg-9d308dfb
+#   sg-6b1ea30d
 # Subnet Id:
 #   subnet-397baf5e
 # AMI:

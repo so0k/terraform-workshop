@@ -1,2 +1,2 @@
-# access_key 	= "$aws_key" 
-# secret_key 	= "$aws_secret"
+# aws_access_key 	= "$aws_key" 
+# aws_secret_key 	= "$aws_secret"
