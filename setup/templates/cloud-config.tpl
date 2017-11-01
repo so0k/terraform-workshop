@@ -71,6 +71,7 @@ write_files:
         sigil -p -f terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > terraform.tfvars
         sigil -p -f rds/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > rds/terraform.tfvars
         rm *.tpl
+        rm rds/*.tpl
         # remove workshop setup sub-folder
         rm -rf setup/
         cd ..
