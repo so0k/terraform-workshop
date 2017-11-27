@@ -1,0 +1,24 @@
+kind: Addons
+metadata:
+  name: beekeeper
+spec:
+  addons:
+  - name: tiller.addons.k8s.io
+    manifest: tiller.addons.k8s.io/k8s-1.7.yaml
+    kubernetesVersion: '>=1.7.0'
+    id: k8s-1.7
+    selector:
+      k8s-addon: tiller.addons.k8s.io
+    version: 2.7.2 #helm version
+  - name: namespaces.honestbee.io
+    manifest: namespaces.honestbee.io/k8s-1.7.yaml
+    kubernetesVersion: '>=1.7.0'
+    selector:
+      k8s-addon: namespaces.honestbee.io
+    version: 1.1.2
+  - name: kube-state-metrics.addons.k8s.io
+    manifest: kube-state-metrics.addons.k8s.io/v1.1.0-rc.0.yaml
+    kubernetesVersion: '>=1.7.0'
+    selector:
+      k8s-addon: kube-state-metrics.addons.k8s.io
+    version: v1.1.0-rc.0

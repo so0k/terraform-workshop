@@ -192,7 +192,7 @@ data "template_file" "cloudconfig" {
     aws_secret             = "${element(aws_iam_access_key.aws_keys.*.secret,count.index)}"
     aws_region             = "ap-southeast-1"
     state_bucket_name      = "${element(aws_s3_bucket.state_store.*.id,count.index)}"
-    cluster_name           = "${var.users[count.index]}_cluster.${var.subdomain}.${var.domain}.${var.tld}"
+    cluster_name           = "${var.users[count.index]}-cluster.${var.subdomain}.${var.domain}.${var.tld}"
   }
 }
 
