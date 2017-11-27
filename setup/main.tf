@@ -183,6 +183,7 @@ data "template_file" "cloudconfig" {
     docker_version         = "17.09.0~ce-0~ubuntu"
     usql_version           = "0.5.0"
     consul_version         = "1.0.0"
+    kops_version           = "1.7.1"
     git_repo               = "https://github.com/honestbee/terraform-workshop.git"
     ws_dir                 = "terraform-workshop"
     user                   = "${var.users[count.index]}"
@@ -190,6 +191,8 @@ data "template_file" "cloudconfig" {
     aws_key                = "${element(aws_iam_access_key.aws_keys.*.id,count.index)}"
     aws_secret             = "${element(aws_iam_access_key.aws_keys.*.secret,count.index)}"
     aws_region             = "ap-southeast-1"
+    state_bucket_name      = "${element(aws_s3_bucket.state_store.*.id,count.index)}"
+    cluster_name           = "${var.users[count.index]}_cluster.${var.subdomain}.${var.domain}.${var.tld}"
   }
 }
 
@@ -223,6 +226,16 @@ resource "aws_instance" "workstations" {
   }
 
   provisioner "file" {
+    content     = "${element(tls_private_key.user-ssh-keys.*.private_key_pem, count.index)}"
+    destination = "/home/ubuntu/.ssh/kops_key"
+  }
+
+  provisioner "file" {
+    content     = "${element(tls_private_key.user-ssh-keys.*.public_key_openssh, count.index)}"
+    destination = "/home/ubuntu/.ssh/kops_key.pub"
+  }
+
+  provisioner "file" {
     content = <<EOF
 Host github.com
   IdentityFile ~/.ssh/deploy_key
@@ -235,9 +248,12 @@ EOF
     inline = [
       "sudo mkdir ~training/.ssh",
       "sudo mv ~ubuntu/.ssh/config ~training/.ssh/config",
-      "sudo mv ~ubuntu/.ssh/deploy_key ~training/.ssh/deploy_key",
+      "sudo mv ~ubuntu/.ssh/deploy_key ~training/.ssh/",
+      "sudo mv ~ubuntu/.ssh/kops_key ~training/.ssh/",
+      "sudo mv ~ubuntu/.ssh/kops_key.pub ~training/.ssh/",
       "sudo chown -R training:training ~training/.ssh",
       "sudo chmod 600 ~training/.ssh/deploy_key",
+      "sudo chmod 600 ~training/.ssh/kops_key",
     ]
   }
 }
