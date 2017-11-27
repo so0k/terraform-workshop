@@ -201,7 +201,19 @@ To apply this channel to the cluster, run the following command:
 channels apply channel -f beekeeper/addons.yaml --yes
 ```
 
+
+## Cleaning up
+
+### Delete cluster
+
+As the cloud resources are managed through Terraform, the only thing we want to do is delete the manifest:
+
+```bash
+kops delete cluster --name ${CLUSTER_NAME} --unregister --yes
+```
+
 ## Todo
 
 - Add section about rolling updates
 - Add section about `kops toolbox template`
+- Add section on how to clean up clusters
