@@ -74,11 +74,11 @@ write_files:
         sigil -p -f main.tf.tpl aws_key=${aws_key} aws_secret=${aws_secret} aws_region=${aws_region} > main.tf
         sigil -p -f terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > terraform.tfvars
         sigil -p -f rds/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > rds/terraform.tfvars
-        sigil -p -f dns/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > dns/terraform.tfvars
-        sigil -p -f kops/.env.tpl aws_key=${aws_key} aws_secret=${aws_secret} state_bucket=${state_bucket_name} cluster_name=${cluster_name} > kops/.env
+        # sigil -p -f dns/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > dns/terraform.tfvars
+        sigil -p -f kops/env.tpl aws_key=${aws_key} aws_secret=${aws_secret} state_bucket_name=${state_bucket_name} cluster_name=${cluster_name} > kops/.env
         rm *.tpl
         rm rds/*.tpl
-        rm dns/*.tpl
+        # rm dns/*.tpl
         rm kops/*.tpl
         cd ..
         chown -R training:training ${ws_dir}/
