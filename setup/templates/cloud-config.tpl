@@ -64,18 +64,22 @@ write_files:
     content: |
         #!/bin/bash
         cd ~training
-        git clone https://github.com/honestbee/flask_app_k8s.git
         git clone ${git_repo} ${ws_dir}
         cd ${ws_dir}
+        # remove workshop setup sub-folder
+        rm -rf setup/
+        # render templates
         sigil -p -f main.tf.tpl aws_key=${aws_key} aws_secret=${aws_secret} aws_region=${aws_region} > main.tf
         sigil -p -f terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > terraform.tfvars
         sigil -p -f rds/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > rds/terraform.tfvars
+        sigil -p -f dns/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > dns/terraform.tfvars
         rm *.tpl
         rm rds/*.tpl
-        # remove workshop setup sub-folder
-        rm -rf setup/
+        rm dns/*.tpl
         cd ..
         chown -R training:training ${ws_dir}/
+        # re-use for Kubernetes / Helm training
+        git clone https://github.com/honestbee/flask_app_k8s.git
         chown -R training:training flask_app_k8s/
   - path: /usr/local/sbin/install_kubectl.sh
     permissions: '0755'
