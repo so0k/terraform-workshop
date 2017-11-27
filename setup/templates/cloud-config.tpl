@@ -20,6 +20,8 @@ runcmd:
   - /usr/local/sbin/install_helm.sh
   - /usr/local/sbin/install_docker.sh
   - /usr/local/sbin/install_consul.sh
+  - /usr/local/sbin/install_kops.sh
+  - /usr/local/sbin/install_channels.sh
   - /usr/local/sbin/install_sigil.sh
   - /usr/local/sbin/install_usql.sh
   - /usr/local/sbin/setup_ws.sh
@@ -51,7 +53,7 @@ write_files:
         curl -Lo ~/terraform.zip https://releases.hashicorp.com/terraform/$${VERSION}/terraform_$${VERSION}_linux_386.zip
         cd ~
         unzip terraform.zip && rm terraform.zip
-        mv terraform /usr/bin/
+        mv terraform /usr/local/bin/
   - path: /usr/local/sbin/install_sigil.sh    
     permissions: '0755'
     content: |
@@ -73,9 +75,11 @@ write_files:
         sigil -p -f terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > terraform.tfvars
         sigil -p -f rds/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > rds/terraform.tfvars
         sigil -p -f dns/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > dns/terraform.tfvars
+        sigil -p -f kops/.env.tpl aws_key=${aws_key} aws_secret=${aws_secret} state_bucket=${state_bucket_name} cluster_name=${cluster_name} > kops/.env
         rm *.tpl
         rm rds/*.tpl
         rm dns/*.tpl
+        rm kops/*.tpl
         cd ..
         chown -R training:training ${ws_dir}/
         # re-use for Kubernetes / Helm training
@@ -86,8 +90,8 @@ write_files:
     content: |
         #!/bin/bash
         VERSION=${kubectl_version}
-        curl -Lo /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$${VERSION}/bin/linux/amd64/kubectl
-        chmod +x /usr/bin/kubectl
+        curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$${VERSION}/bin/linux/amd64/kubectl
+        chmod +x /usr/local/bin/kubectl
   - path: /usr/local/sbin/install_helm.sh
     permissions: '0755'
     content: |
@@ -96,7 +100,7 @@ write_files:
         curl -Lo ~/helm.tar.gz https://storage.googleapis.com/kubernetes-helm/helm-$${VERSION}-linux-amd64.tar.gz
         cd ~
         tar -xzf helm.tar.gz && rm helm.tar.gz
-        mv linux-amd64/helm /usr/bin/ && rm -rf linux-amd64
+        mv linux-amd64/helm /usr/local/bin/ && rm -rf linux-amd64
   - path: /usr/local/sbin/install_usql.sh
     permissions: '0755'
     content: |
@@ -105,7 +109,7 @@ write_files:
         curl -Lo ~/usql.tar.bz2 https://github.com/xo/usql/releases/download/v$${VERSION}/usql-$${VERSION}-linux-amd64.tar.bz2
         cd ~
         tar -xjf usql.tar.bz2 && rm usql.tar.bz2
-        mv usql /usr/bin/
+        mv usql /usr/local/bin/
   - path: /usr/local/sbin/install_consul.sh
     permissions: '0755'
     content: |
@@ -114,7 +118,7 @@ write_files:
         curl -Lo ~/consul.zip https://releases.hashicorp.com/consul/$${VERSION}/consul_$${VERSION}_linux_amd64.zip
         cd ~
         unzip consul.zip && rm consul.zip
-        mv consul /usr/bin/
+        mv consul /usr/local/bin/
   - path: /usr/local/sbin/install_docker.sh
     permissions: '0755'
     content: |
@@ -128,3 +132,18 @@ write_files:
         sudo apt-get update
         sudo apt-get install docker-ce=$${VERSION} -y
         sudo usermod -aG docker training
+  - path: /usr/local/sbin/install_channels.sh
+    permissions: '0755'
+    content: |
+        curl -Lo channels.zip http://tech.honestbee.com/kops-infra/channels-1.7.1-linux-amd64.zip
+        unzip channels.zip && rm channels.zip
+        mv channels usr/local/bin/
+  - path: /usr/local/sbin/install_kops.sh
+    permissions: '0755'
+    content: |
+        #!/bin/bash
+        VERSION=${kops_version}
+        # VERSION=$(curl -s https://api.github.com/repos/kubernetes/kops/releases/latest | grep tag_name | cut -d '"' -f 4)
+        curl -LO https://github.com/kubernetes/kops/releases/download/$${VERSION}/kops-linux-amd64
+        chmod +x kops-linux-amd64
+        sudo mv kops-linux-amd64 /usr/local/bin/kops
