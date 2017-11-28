@@ -127,6 +127,34 @@ Wait for the cluster to be ready...
 until kubectl cluster-info; do (( i++ ));echo "Cluster not available yet, waiting for 5 seconds ($i)"; sleep 5; done
 ```
 
+**Troubleshooting**
+
+-   Get the public IP from the master and ssh into it
+
+    ```
+    ssh -i ~/.ssh/kops_key admin@54.254.203.127
+    ```
+
+-   Check the status of the systemd units (kubelet / docker)
+
+    ```
+    sudo systemctl status kubelet
+    sudo systemctl status docker
+    ```
+
+-   Follow the `kubelet` journal logs and look for errors
+
+    ```
+    sudo journalctl -u kubelet
+    ```
+
+-   Follow the `api-server` logs and look for errors
+
+    ```
+    sudo tail -f /var/log/kube-apiserver.log
+    ```
+
+
 ### Rolling Updates
 
 ...To be completed (note about the danger of unbalanced clusters)
