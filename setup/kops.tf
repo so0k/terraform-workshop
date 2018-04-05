@@ -26,6 +26,8 @@ resource "aws_s3_bucket" "state_store" {
   region = "${var.aws_region}"
   acl    = "private"
 
+  force_destroy = "true"
+
   tags {
     builtWith = "terraform"
     system    = "kops"
@@ -36,6 +38,6 @@ resource "aws_s3_bucket" "state_store" {
   }
 
   lifecycle {
-    prevent_destroy = true
+    # prevent_destroy = true
   }
 }

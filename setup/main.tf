@@ -26,7 +26,6 @@ variable "users" {
 
   default = [
     "bee01",
-    "bee02",
   ]
 
   # "bee02",
@@ -126,6 +125,8 @@ resource "aws_security_group" "workshop" {
 resource "aws_iam_user" "aws_users" {
   count = "${length(var.users)}"
   name  = "${var.users[count.index]}"
+
+  force_destroy = true
 }
 
 resource "aws_iam_user_policy_attachment" "aws_users" {

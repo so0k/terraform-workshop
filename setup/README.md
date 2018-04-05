@@ -17,3 +17,13 @@ Also, once applied - add the `deploy_key` to private repositories
 ```bash
 terraform output deploy_key | pbcopy
 ```
+
+This terraform config will create a new DNS Zone.
+
+To delegate DNS lookup from your main zone, create an NS record with the output
+from:
+
+```
+terraform output subdomain_nameservers
+```
+
