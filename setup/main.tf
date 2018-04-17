@@ -177,14 +177,14 @@ data "template_file" "cloudconfig" {
   template = "${file("./templates/cloud-config.tpl")}"
 
   vars {
-    tf_version             = "0.10.8"
+    tf_version             = "0.11.6"
     sigil_version          = "0.4.0"
     kubectl_version        = "v1.8.0"
-    helm_version           = "v2.7.0"
+    helm_version           = "v2.8.2"
     docker_version         = "17.09.0~ce-0~ubuntu"
     usql_version           = "0.5.0"
     consul_version         = "1.0.0"
-    kops_version           = "1.7.1"
+    kops_version           = "1.9.0"
     git_repo               = "https://github.com/honestbee/terraform-workshop.git"
     ws_dir                 = "terraform-workshop"
     user                   = "${var.users[count.index]}"
@@ -202,7 +202,7 @@ resource "aws_instance" "workstations" {
 
   vpc_security_group_ids = ["${aws_security_group.workshop.id}"]
   user_data              = "${element(data.template_cloudinit_config.workstations.*.rendered,count.index)}"
-  ami                    = "ami-032fb460"
+  ami                    = "ami-8dd6f3f1"
   instance_type          = "t2.micro"
 
   key_name = "${var.users[count.index]}"
