@@ -8,5 +8,5 @@
 provider "aws" {
   access_key 	= "$aws_key" 
   secret_key 	= "$aws_secret"
-  region        = "$aws_region"
+  region      = "$aws_region"
 }
