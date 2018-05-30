@@ -70,7 +70,10 @@ write_files:
         cd ${ws_dir}
         # remove workshop setup sub-folder
         rm -rf setup/
+        mkdir -p ~training/.aws
         # render templates
+        sigil -p -f aws-creds.tpl aws_key=${aws_key} aws_secret=${aws_secret} > ~training/.aws/credentials
+        chown -R training:training ~training/.aws/
         sigil -p -f main.tf.tpl aws_key=${aws_key} aws_secret=${aws_secret} aws_region=${aws_region} sg_group=${sg_group} ami=${ami} vpc=${vpc} subnet_a=${subnet_a} > main.tf
         sigil -p -f terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > terraform.tfvars
         sigil -p -f rds/main.tf.tpl aws_key=${aws_key} aws_secret=${aws_secret} aws_region=${aws_region} sg_group=${sg_group} subnet_a=${subnet_a} subnet_b=${subnet_b}> rds/main.tf

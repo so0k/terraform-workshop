@@ -1,4 +1,4 @@
-# Honestbee Private Postgres db Module
+# Swatrider Private Postgres db Module
 
 Example using the private Honestbee postgres-db module to postgres databases and roles within existing Postgres Instances.
 

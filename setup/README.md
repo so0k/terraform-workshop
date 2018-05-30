@@ -23,7 +23,14 @@ This terraform config will create a new DNS Zone.
 To delegate DNS lookup from your main zone, create an NS record with the output
 from:
 
-```
+```bash
 terraform output subdomain_nameservers
 ```
 
+To monitor workstation provisioning:
+
+```bash
+ssh-keygen -R <dns>
+ssh -i generated/<priv-key> ubuntu@<dns>
+tail -f /var/log/cloud-init-output.log
+```
