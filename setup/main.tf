@@ -30,6 +30,9 @@ variable "users" {
 
   default = [
     "rider01",
+    "rider02",
+    "rider03",
+    "rider04",
   ]
 
   # "rider02",
@@ -223,7 +226,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-zesty-17.04-amd64-server-*"]
   }
 
   filter {
@@ -294,6 +297,14 @@ EOF
       "sudo chmod 600 ~training/.ssh/kops_key",
     ]
   }
+}
+
+resource "cloudflare_record" "training_ns" {
+  count  = "${length(aws_route53_zone.training.name_servers)}"
+  domain = "${var.domain}.${var.tld}"
+  name   = "${var.subdomain}"
+  type   = "NS"
+  value  = "${element(aws_route53_zone.training.name_servers,count.index)}"
 }
 
 resource "aws_route53_zone" "training" {
