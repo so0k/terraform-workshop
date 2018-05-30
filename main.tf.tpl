@@ -1,9 +1,9 @@
 # Security Group Id: 
-#   sg-6b1ea30d
+#   $sg_group
 # Subnet Id:
-#   subnet-397baf5e
+#   $subnet_a
 # AMI:
-#   ami-032fb460
+#   $ami
 
 provider "aws" {
   access_key 	= "$aws_key" 

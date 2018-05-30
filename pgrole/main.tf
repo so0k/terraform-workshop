@@ -13,12 +13,12 @@ module "postgres-db" {
   provider_db = {
     host     = "< fill me in >"
     name     = "master"
-    username = "honestbee"
+    username = "training"
     password = "< fill me in >"
   }
 
   db = {
-    name     = "bee_db"
-    username = "bee"
+    name     = "training_db"
+    username = "training"
   }
 }
