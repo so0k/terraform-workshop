@@ -71,9 +71,10 @@ write_files:
         # remove workshop setup sub-folder
         rm -rf setup/
         # render templates
-        sigil -p -f main.tf.tpl aws_key=${aws_key} aws_secret=${aws_secret} aws_region=${aws_region} > main.tf
+        sigil -p -f main.tf.tpl aws_key=${aws_key} aws_secret=${aws_secret} aws_region=${aws_region} sg_group=${sg_group} ami=${ami} vpc=${vpc} subnet_a=${subnet_a} > main.tf
         sigil -p -f terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > terraform.tfvars
-        sigil -p -f rds/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > rds/terraform.tfvars
+        sigil -p -f rds/main.tf.tpl aws_key=${aws_key} aws_secret=${aws_secret} aws_region=${aws_region} sg_group=${sg_group} subnet_a=${subnet_a} subnet_b=${subnet_b}> rds/main.tf
+        sigil -p -f rds/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} aws_region=${aws_region} sg_group=${sg_group} subnet_a=${subnet_a} subnet_b=${subnet_b}> rds/terraform.tfvars
         # sigil -p -f dns/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > dns/terraform.tfvars
         sigil -p -f kops/env.tpl aws_key=${aws_key} aws_secret=${aws_secret} state_bucket_name=${state_bucket_name} cluster_name=${cluster_name} > kops/.env
         rm *.tpl
@@ -83,7 +84,7 @@ write_files:
         cd ..
         chown -R training:training ${ws_dir}/
         # re-use for Kubernetes / Helm training
-        git clone https://github.com/honestbee/flask_app_k8s.git
+        git clone https://github.com/so0k/flask_app_k8s.git
         chown -R training:training flask_app_k8s/
   - path: /usr/local/sbin/install_kubectl.sh
     permissions: '0755'

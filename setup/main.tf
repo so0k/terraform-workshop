@@ -9,12 +9,16 @@ variable ingress_cidr_blocks {
   type = "list"
 }
 
+variable instance_type_ws {
+  default = "t2.micro"
+}
+
 variable "subdomain" {
   default = "training"
 }
 
 variable "domain" {
-  default = "honestbee"
+  default = "swatrider"
 }
 
 variable "tld" {
@@ -25,18 +29,18 @@ variable "users" {
   type = "list"
 
   default = [
-    "bee01",
+    "rider01",
   ]
 
-  # "bee02",
-  # "bee03",
-  # "bee04",
-  # "bee05",
-  # "bee06",
-  # "bee07",
-  # "bee08",
-  # "bee09",
-  # "bee10",
+  # "rider02",
+  # "rider03",
+  # "rider04",
+  # "rider05",
+  # "rider06",
+  # "rider07",
+  # "rider08",
+  # "rider09",
+  # "rider10",
 }
 
 provider "aws" {
@@ -101,10 +105,22 @@ resource "aws_key_pair" "user-ssh-keys" {
   public_key = "${element(tls_private_key.user-ssh-keys.*.public_key_openssh, count.index)}"
 }
 
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnet" "default_a" {
+  availability_zone = "${var.aws_region}a"
+}
+
+data "aws_subnet" "default_b" {
+  availability_zone = "${var.aws_region}b"
+}
+
 resource "aws_security_group" "workshop" {
   name        = "allow_all"
   description = "Workshop - Allow all inbound traffic"
-  vpc_id      = "vpc-df585ebb"
+  vpc_id      = "${data.aws_vpc.default.id}"
 
   ingress {
     protocol    = -1
@@ -177,24 +193,45 @@ data "template_file" "cloudconfig" {
   template = "${file("./templates/cloud-config.tpl")}"
 
   vars {
-    tf_version             = "0.11.6"
+    tf_version             = "0.11.7"
     sigil_version          = "0.4.0"
-    kubectl_version        = "v1.8.0"
+    kubectl_version        = "v1.9.3"
     helm_version           = "v2.8.2"
     docker_version         = "17.09.0~ce-0~ubuntu"
     usql_version           = "0.5.0"
     consul_version         = "1.0.0"
     kops_version           = "1.9.0"
-    git_repo               = "https://github.com/honestbee/terraform-workshop.git"
+    git_repo               = "https://github.com/so0k/terraform-workshop.git"
     ws_dir                 = "terraform-workshop"
     user                   = "${var.users[count.index]}"
     training_password_hash = "${data.null_data_source.password_hash.outputs["training"]}"
     aws_key                = "${element(aws_iam_access_key.aws_keys.*.id,count.index)}"
     aws_secret             = "${element(aws_iam_access_key.aws_keys.*.secret,count.index)}"
-    aws_region             = "ap-southeast-1"
+    aws_region             = "${var.aws_region}"
+    sg_group               = "${aws_security_group.workshop.id}"
+    vpc                    = "${data.aws_vpc.default.id}"
+    subnet_a               = "${data.aws_subnet.default_a.id}"
+    subnet_b               = "${data.aws_subnet.default_b.id}"
+    ami                    = "${data.aws_ami.ubuntu.id}"
     state_bucket_name      = "${element(aws_s3_bucket.state_store.*.id,count.index)}"
     cluster_name           = "${var.users[count.index]}-cluster.${var.subdomain}.${var.domain}.${var.tld}"
   }
+}
+
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"] # Canonical
 }
 
 resource "aws_instance" "workstations" {
@@ -202,8 +239,8 @@ resource "aws_instance" "workstations" {
 
   vpc_security_group_ids = ["${aws_security_group.workshop.id}"]
   user_data              = "${element(data.template_cloudinit_config.workstations.*.rendered,count.index)}"
-  ami                    = "ami-8dd6f3f1"
-  instance_type          = "t2.micro"
+  ami                    = "${data.aws_ami.ubuntu.id}"
+  instance_type          = "${var.instance_type_ws}"
 
   key_name = "${var.users[count.index]}"
 
@@ -212,7 +249,7 @@ resource "aws_instance" "workstations" {
   }
 
   lifecycle {
-    ignore_changes = ["user_data"]
+    ignore_changes = ["user_data", "ami"]
   }
 
   connection {
