@@ -30,11 +30,11 @@ variable "users" {
 
   default = [
     "rider01",
-    "rider02",
-    "rider03",
-    "rider04",
   ]
 
+  # "rider02",
+  # "rider03",
+  # "rider04",
   # "rider02",
   # "rider03",
   # "rider04",
@@ -226,7 +226,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-zesty-17.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
   }
 
   filter {
@@ -279,6 +279,8 @@ resource "aws_instance" "workstations" {
   provisioner "file" {
     content = <<EOF
 Host github.com
+  IdentityFile ~/.ssh/deploy_key
+Host bitbucket.org
   IdentityFile ~/.ssh/deploy_key
 EOF
 
