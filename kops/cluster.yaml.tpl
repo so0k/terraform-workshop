@@ -70,8 +70,11 @@ spec:
             "ec2:DescribeSecurityGroups",
             "ec2:DescribeRouteTables",
             "ec2:DescribeVpcs",
+            "ec2:DescribeInternetGateways",
+            "ec2:DescribeAccountAttributes",
             "iam:GetServerCertificate",
-            "iam:ListServerCertificates"
+            "iam:ListServerCertificates",
+            "iam:CreateServiceLinkedRole"
           ],
           "Resource": ["*"]
         },
@@ -146,6 +149,10 @@ spec:
     name: ap-southeast-1a
     type: Public
     zone: ap-southeast-1a
+  - cidr: 172.20.64.0/19
+    name: ap-southeast-1b
+    type: Public
+    zone: ap-southeast-1b
   topology:
     dns:
       type: Public
@@ -189,3 +196,4 @@ spec:
   role: Node
   subnets:
   - ap-southeast-1a
+  - ap-southeast-1b

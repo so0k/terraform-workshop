@@ -1,3 +1,7 @@
+provider "aws" {
+  region     = "$aws_region"
+}
+
 data "aws_vpc" "default" {
   default = "true"
 }
