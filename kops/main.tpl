@@ -16,7 +16,7 @@ module "kops" {
 resource "aws_security_group" "ingress" {
   name        = "ingress.$cluster_name"
   description = "ingress.$cluster_name"
-  vpc_id      = "${data.aws_vpc.default.id}"
+  vpc_id      = "\${data.aws_vpc.default.id}"
 
   tags = "${
     map(
@@ -32,7 +32,7 @@ resource "aws_security_group_rule" "allow_all_egress_on_ingress" {
   protocol    = "-1"
   cidr_blocks = ["0.0.0.0/0"]
 
-  security_group_id = "${aws_security_group.ingress.id}"
+  security_group_id = "\${aws_security_group.ingress.id}"
 }
 
 resource "aws_security_group_rule" "allow_public_http_on_ingress" {
@@ -42,7 +42,7 @@ resource "aws_security_group_rule" "allow_public_http_on_ingress" {
   protocol    = "tcp"
   cidr_blocks = ["0.0.0.0/0"]
 
-  security_group_id = "${aws_security_group.ingress.id}"
+  security_group_id = "\${aws_security_group.ingress.id}"
 }
 
 resource "aws_security_group_rule" "allow_public_https_on_ingress" {
@@ -52,17 +52,17 @@ resource "aws_security_group_rule" "allow_public_https_on_ingress" {
   protocol    = "tcp"
   cidr_blocks = ["0.0.0.0/0"]
 
-  security_group_id = "${aws_security_group.ingress.id}"
+  security_group_id = "\${aws_security_group.ingress.id}"
 }
 
 resource "aws_security_group_rule" "allow_all_ingress_on_nodes" {
-  count                    = "${length(module.kops.node_security_group_ids)}"
+  count                    = "\${length(module.kops.node_security_group_ids)}"
   type                     = "ingress"
   from_port                = 0
   to_port                  = 0
   protocol                 = "-1"
-  source_security_group_id = "${aws_security_group.ingress.id}"
+  source_security_group_id = "\${aws_security_group.ingress.id}"
 
-  security_group_id = "${element(module.kops.node_security_group_ids,count.index)}"
+  security_group_id = "\${element(module.kops.node_security_group_ids,count.index)}"
   depends_on        = ["module.kops"]
 }
