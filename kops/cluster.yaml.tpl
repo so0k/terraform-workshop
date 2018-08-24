@@ -26,6 +26,8 @@ spec:
   iam:
     allowContainerRegistry: true
     legacy: false
+  cloudLabels:
+    kubernetes.io/cluster/$cluster_name: owned
   additionalPolicies:
     master: |
       [

@@ -33,7 +33,7 @@ variable "skipper_version" {
 
 variable "kube_ingress_aws_controller_version" {
   description = "kube-ingress-aws-controller version"
-  default     = "v0.6.10"
+  default     = "v0.7.3"
 }
 
 variable "kube_state_metrics_version" {
