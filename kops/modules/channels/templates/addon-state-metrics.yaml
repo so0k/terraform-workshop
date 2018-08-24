@@ -2,6 +2,8 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   name: kube-state-metrics
+  labels:
+    k8s-addon: ${addon_label}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -15,16 +17,22 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
   name: kube-state-metrics
+  labels:
+    k8s-addon: ${addon_label}
 rules:
 - apiGroups: [""]
   resources:
+  - configmaps
+  - secrets
   - nodes
   - pods
   - services
+  - endpoints
   - resourcequotas
   - replicationcontrollers
   - limitranges
   - persistentvolumeclaims
+  - persistentvolumes
   - namespaces
   verbs: ["list", "watch"]
 - apiGroups: ["extensions"]
@@ -37,9 +45,13 @@ rules:
   resources:
   - statefulsets
   verbs: ["list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources:
+  - horizontalpodautoscalers
+  verbs: ["list", "watch"]
 - apiGroups: ["batch"]
   resources:
-  - cronjobs
+  # - cronjobs
   - jobs
   verbs: ["list", "watch"]
 ---
@@ -47,18 +59,39 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: kube-state-metrics
+  labels:
+    k8s-addon: ${addon_label}
   namespace: kube-system
 spec:
   replicas: 1
   template:
     metadata:
       labels:
-        k8s-app: kube-state-metrics
+        k8s-app: ${addon_label}
     spec:
       serviceAccountName: kube-state-metrics
       containers:
       - name: kube-state-metrics
-        image: quay.io/coreos/kube-state-metrics:v1.1.0-rc.0
+        image: quay.io/coreos/kube-state-metrics:${state_metrics_version}
+        args:
+          - --collectors=pods
+          - --collectors=daemonsets
+          - --collectors=deployments
+          - --collectors=limitranges
+          - --collectors=nodes
+          - --collectors=replicasets
+          - --collectors=replicationcontrollers
+          - --collectors=resourcequotas
+          - --collectors=services
+          - --collectors=statefulsets
+          - --collectors=persistentvolumes
+          - --collectors=persistentvolumeclaims
+          - --collectors=namespaces
+          - --collectors=horizontalpodautoscalers
+          - --collectors=endpoints
+          - --collectors=secrets
+          - --collectors=configmaps
+          - --collectors=jobs
         ports:
         - name: http-metrics
           containerPort: 8080
@@ -67,16 +100,16 @@ spec:
             path: /healthz
             port: 8080
           initialDelaySeconds: 5
-          timeoutSeconds: 5
+          timeoutSeconds: 15
         resources:
           requests:
-            memory: 100Mi
-            cpu: 100m
+            memory: 500Mi
+            cpu: 200m
           limits:
             memory: 500Mi
             cpu: 200m
       - name: addon-resizer
-        image: gcr.io/google_containers/addon-resizer:1.0
+        image: gcr.io/google_containers/addon-resizer:1.7
         resources:
           limits:
             cpu: 100m
@@ -96,10 +129,10 @@ spec:
         command:
           - /pod_nanny
           - --container=kube-state-metrics
-          - --cpu=100m
+          - --cpu=200m
           - --extra-cpu=1m
-          - --memory=100Mi
-          - --extra-memory=2Mi
+          - --memory=500Mi
+          - --extra-memory=20Mi
           - --threshold=5
           - --deployment=kube-state-metrics
 ---
@@ -107,6 +140,8 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
   name: kube-state-metrics
+  labels:
+    k8s-addon: ${addon_label}
   namespace: kube-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -121,6 +156,8 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: Role
 metadata:
   namespace: kube-system
+  labels:
+    k8s-addon: ${addon_label}
   name: kube-state-metrics-resizer
 rules:
 - apiGroups: [""]
@@ -143,9 +180,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kube-state-metrics
-  namespace: kube-system
   labels:
-    k8s-app: kube-state-metrics
+    k8s-addon: ${addon_label}
+  namespace: kube-system
   annotations:
     prometheus.io/scrape: 'true'
 spec:

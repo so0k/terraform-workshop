@@ -68,6 +68,8 @@ write_files:
         cd ~training
         git clone ${git_repo} ${ws_dir}
         cd ${ws_dir}
+        # use co-working branch
+        git checkout coworking
         # remove workshop setup sub-folder
         rm -rf setup/
         mkdir -p ~training/.aws
@@ -80,6 +82,9 @@ write_files:
         sigil -p -f rds/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} aws_region=${aws_region} sg_group=${sg_group} subnet_a=${subnet_a} subnet_b=${subnet_b}> rds/terraform.tfvars
         # sigil -p -f dns/terraform.tfvars.tpl aws_key=${aws_key} aws_secret=${aws_secret} > dns/terraform.tfvars
         sigil -p -f kops/env.tpl aws_key=${aws_key} aws_secret=${aws_secret} state_bucket_name=${state_bucket_name} cluster_name=${cluster_name} > kops/.env
+        mkdir -p kops/manifests
+        sigil -p -f kops/cluster.yaml.tpl cluster_name=${cluster_name} addons_bucket_name=${addons_bucket_name} > kops/manifests/${cluster_name}.yaml
+        sigil -p -f kops/main.tf.tpl aws_region=${aws_region} cluster_name=${cluster_name} addons_bucket_name=${addons_bucket_name} > kops/main.tf
         rm *.tpl
         rm rds/*.tpl
         # rm dns/*.tpl

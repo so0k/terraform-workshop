@@ -35,15 +35,18 @@ variable "users" {
   # "rider02",
   # "rider03",
   # "rider04",
-  # "rider02",
-  # "rider03",
-  # "rider04",
   # "rider05",
   # "rider06",
   # "rider07",
   # "rider08",
   # "rider09",
   # "rider10",
+  # "rider11",
+  # "rider12",
+  # "rider13",
+  # "rider14",
+  # "rider15",
+  # "rider16",
 }
 
 provider "aws" {
@@ -120,6 +123,8 @@ data "aws_subnet" "default_b" {
   availability_zone = "${var.aws_region}b"
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_security_group" "workshop" {
   name        = "allow_all"
   description = "Workshop - Allow all inbound traffic"
@@ -151,19 +156,7 @@ resource "aws_iam_user" "aws_users" {
 resource "aws_iam_user_policy_attachment" "aws_users" {
   count      = "${length(var.users)}"
   user       = "${element(aws_iam_user.aws_users.*.name,count.index)}"
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
-}
-
-resource "aws_iam_user_policy_attachment" "aws_users_rds" {
-  count      = "${length(var.users)}"
-  user       = "${element(aws_iam_user.aws_users.*.name,count.index)}"
-  policy_arn = "arn:aws:iam::aws:policy/AmazonRDSFullAccess"
-}
-
-resource "aws_iam_user_policy_attachment" "aws_users_r53" {
-  count      = "${length(var.users)}"
-  user       = "${element(aws_iam_user.aws_users.*.name,count.index)}"
-  policy_arn = "arn:aws:iam::aws:policy/AmazonRoute53FullAccess"
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
 resource "aws_iam_access_key" "aws_keys" {
@@ -198,12 +191,12 @@ data "template_file" "cloudconfig" {
   vars {
     tf_version             = "0.11.7"
     sigil_version          = "0.4.0"
-    kubectl_version        = "v1.9.3"
-    helm_version           = "v2.8.2"
-    docker_version         = "17.09.0~ce-0~ubuntu"
+    kubectl_version        = "v1.9.10"
+    helm_version           = "v2.10.0"
+    docker_version         = "18.06.0~ce~3-0~ubuntu"
     usql_version           = "0.5.0"
     consul_version         = "1.0.0"
-    kops_version           = "1.9.0"
+    kops_version           = "1.9.2"
     git_repo               = "https://github.com/so0k/terraform-workshop.git"
     ws_dir                 = "terraform-workshop"
     user                   = "${var.users[count.index]}"
@@ -218,6 +211,8 @@ data "template_file" "cloudconfig" {
     ami                    = "${data.aws_ami.ubuntu.id}"
     state_bucket_name      = "${element(aws_s3_bucket.state_store.*.id,count.index)}"
     cluster_name           = "${var.users[count.index]}-cluster.${var.subdomain}.${var.domain}.${var.tld}"
+    addons_bucket_name     = "${element(aws_s3_bucket.addons_store.*.id,count.index)}"
+    dns_zone               = "${var.subdomain}.${var.domain}.${var.tld}"
   }
 }
 
@@ -248,7 +243,7 @@ resource "aws_instance" "workstations" {
   key_name = "${var.users[count.index]}"
 
   tags {
-    Name = "${var.users[count.index]}"
+    Name = "${var.users[count.index]}-workstation"
   }
 
   lifecycle {
@@ -262,11 +257,6 @@ resource "aws_instance" "workstations" {
   }
 
   provisioner "file" {
-    content     = "${tls_private_key.deploy-key.private_key_pem}"
-    destination = "/home/ubuntu/.ssh/deploy_key"
-  }
-
-  provisioner "file" {
     content     = "${element(tls_private_key.user-ssh-keys.*.private_key_pem, count.index)}"
     destination = "/home/ubuntu/.ssh/kops_key"
   }
@@ -276,37 +266,15 @@ resource "aws_instance" "workstations" {
     destination = "/home/ubuntu/.ssh/kops_key.pub"
   }
 
-  provisioner "file" {
-    content = <<EOF
-Host github.com
-  IdentityFile ~/.ssh/deploy_key
-Host bitbucket.org
-  IdentityFile ~/.ssh/deploy_key
-EOF
-
-    destination = "/home/ubuntu/.ssh/config"
-  }
-
   provisioner "remote-exec" {
     inline = [
       "sudo mkdir ~training/.ssh",
-      "sudo mv ~ubuntu/.ssh/config ~training/.ssh/config",
-      "sudo mv ~ubuntu/.ssh/deploy_key ~training/.ssh/",
       "sudo mv ~ubuntu/.ssh/kops_key ~training/.ssh/",
       "sudo mv ~ubuntu/.ssh/kops_key.pub ~training/.ssh/",
       "sudo chown -R training:training ~training/.ssh",
-      "sudo chmod 600 ~training/.ssh/deploy_key",
       "sudo chmod 600 ~training/.ssh/kops_key",
     ]
   }
-}
-
-resource "cloudflare_record" "training_ns" {
-  count  = "${length(aws_route53_zone.training.name_servers)}"
-  domain = "${var.domain}.${var.tld}"
-  name   = "${var.subdomain}"
-  type   = "NS"
-  value  = "${element(aws_route53_zone.training.name_servers,count.index)}"
 }
 
 resource "aws_route53_zone" "training" {
@@ -317,8 +285,32 @@ resource "aws_route53_zone" "training" {
   }
 }
 
+resource "aws_route53_zone" "training_internal" {
+  name = "internal.${var.subdomain}.${var.domain}.${var.tld}"
+
+  vpc_id = "${data.aws_vpc.default.id}"
+
+  tags {
+    Environment = "Training"
+  }
+}
+
+resource "aws_route53_record" "training_internal_ns" {
+  zone_id = "${aws_route53_zone.training.id}"
+  name    = "internal.${var.subdomain}.${var.domain}.${var.tld}"
+  type    = "NS"
+  ttl     = "900"
+
+  records = [
+    "${aws_route53_zone.training_internal.name_servers.0}",
+    "${aws_route53_zone.training_internal.name_servers.1}",
+    "${aws_route53_zone.training_internal.name_servers.2}",
+    "${aws_route53_zone.training_internal.name_servers.3}",
+  ]
+}
+
 # create a DNS record per user
-resource "aws_route53_record" "hosts" {
+resource "aws_route53_record" "workstations" {
   count   = "${length(var.users)}"
   zone_id = "${aws_route53_zone.training.zone_id}"
   name    = "${element(var.users,count.index)}.${var.subdomain}.${var.domain}.${var.tld}"

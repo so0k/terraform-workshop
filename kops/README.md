@@ -24,76 +24,38 @@ Verify the contents of the `.env` file, then load these variables into your shel
 export $(cat .env | xargs)
 ```
 
-### Create cluster spec
-
-Similar to `kubectl` ... `kops` provides imperative commands to generate cluster definitions:
-
-```bash
-kops create cluster \
-    --node-count 3 \
-    --zones ap-southeast-1a \
-    --master-zones ap-southeast-1a \
-    --node-size t2.medium \
-    --master-size t2.medium \
-    --ssh-public-key ~/.ssh/kops_key.pub \
-    ${CLUSTER_NAME}
-```
-
-Now verify that the cluster definition was created in the kops state store.
-
-```bash
-kops get cluster
-
-# Also list instance groups related to the cluster
-kops get --name $CLUSTER_NAME instancegroups
-```
-
 ### Get/Set cluster definitions
 
 Ideally we keep these cluster definitions as manifests under source control (Infrastructure as code).
 
-To download these manifests, similarly to Kubernetes, use the `get` subcommand and `--output yaml`:
-
-Get:
+Review / Edit the cluster manifest
 
 ```bash
-kops get cluster ${CLUSTER_NAME} -o yaml > ${CLUSTER_NAME}-cluster.yaml
-kops get --name ${CLUSTER_NAME} instancegroups -o yaml > ${CLUSTER_NAME}-ig.yaml
+vim manifests/${CLUSTER_NAME}.yaml
 ```
 
-**Note** use the `--full` flag to see all defaults
-
-Review / Edit the cluster and instnace group manifests
-
-```bash
-vim ${CLUSTER_NAME}-cluster.yaml
-```
-
-```bash
-vim ${CLUSTER_NAME}-ig.yaml
-```
-
-Read more about these manifests:
+Read more about specs in this manifest:
 
 - [Cluster Spec](https://github.com/kubernetes/kops/blob/master/docs/cluster_spec.md)
 - [Instance Groups](https://github.com/kubernetes/kops/blob/master/docs/instance_groups.md)
 
-During cluster bootstrap, manifests are read from the state store by the bootstrapping components. 
+During cluster bootstrap, manifests are read from the state store by the bootstrapping components.
 Thus, we need to ensure the manifests are updated into the state store.
 
 Set:
 
 ```bash
-kops replace -f ${CLUSTER_NAME}-cluster.yaml
-kops replace -f ${CLUSTER_NAME}-ig.yaml
+kops replace --force -f manifests/${CLUSTER_NAME}.yaml
+kops create secret --name=${CLUSTER_NAME} sshpublickey admin -i ~/.ssh/kops_key.pub
 ```
 
 ### Generate Terraform config
 
 ```bash
-kops update cluster --name ${CLUSTER_NAME} \
-  --target=terraform \
-  --out=modules/clusters/${CLUSTER_NAME} 
+kops update cluster \
+		--name ${CLUSTER_NAME} \
+		--out=modules/kops \
+		--target=terraform
 ```
 
 **Note** Add this stage, `kops` will automatically configure your `kubeconfig` as well. 
@@ -108,16 +70,15 @@ kops export --name ${CLUSTER_NAME} kubecfg
 As we heavily use Terraform modules and manage infrastructure outside of Kubernetes using Terraform, we import the kops generated module into our `main.tf` file:
 
 ```hcl
-module "cluster-bee02" {
-  source = "./modules/clusters/bee02-cluster.training.honestbee.com"
-}
+
 ```
 
 Initialise, plan and apply the Terraform configuration:
 
 ```bash
 terraform init
-terraform plan
+terraform apply -target module.channels
+terraform apply -target module.kops
 terraform apply
 ```
 
@@ -154,11 +115,6 @@ until kubectl cluster-info; do (( i++ ));echo "Cluster not available yet, waitin
     sudo tail -f /var/log/kube-apiserver.log
     ```
 
-
-### Rolling Updates
-
-...To be completed (note about the danger of unbalanced clusters)
-
 ## Kops addon channels
 
 Kubernetes addons are bundles of resources that provide specific functionality (such as dashboards, auto scaling, ...). Multiple addons can be versioned together and managed through the concept of
@@ -169,6 +125,8 @@ kubernetes resource manifests streamed into a single yaml file. The `channels` t
 the creation of all addons in the channel.
 
 ### Deploy upstream channels
+
+**NOTE**: These channels were deployed as part of cluster bootstrap
 
 There are several upstream channels such as dashboard and heapster, we may install these as follows:
 
@@ -204,31 +162,29 @@ Once we accepted the untrusted root cluster certificate, we can get a list of ba
 kubectl config view -o json | jq '[.users[] | select(.name | contains("basic-auth")) | {(.name): {(.user.username): .user.password}}]'
 ```
 
-### Deploy custom Honestbee - beekeeper channel
+### Deploy custom channels
 
-As Honestbee depends on Helm for all of its deployments, we created our own addons channel called `beekeeper` to bootstrap Helm and 
-other core Kubernetes addons (namespaces, service accounts, registry secrets, rbac, ...). On your workstation are sample addons for
-practice purposes.
+As companies depend on Helm for all of its deployments, Helm should be bootstrapped as an addon in a custom channel.
 
-```
-beekeeper/
-├── addons.yaml
-├── kube-state-metrics.addons.k8s.io
-│   ├── README.md
-│   ├── v1.0.1.yaml
-│   └── v1.1.0-rc.0.yaml
-├── namespaces.honestbee.io
-│   └── k8s-1.7.yaml
-└── tiller.addons.k8s.io
-    └── k8s-1.7.yaml
-```
+other core Kubernetes addons  could be: namespaces, service accounts, registry secrets, rbac roles/service accounts, ....
 
-To apply this channel to the cluster, run the following command:
+On your workstation a Terraform module exists which renders and uploads custom addons to S3 for cluster bootstrap.
 
 ```
-channels apply channel -f beekeeper/addons.yaml --yes
+.
+├── main.tf
+├── manifests
+│   └── rider01-cluster.training.swatrider.com.yaml
+└── modules
+    └── channels
+        ├── main.tf
+        ├── templates
+        │   ├── addon-ingress.yaml
+        │   ├── addon-state-metrics.yaml
+        │   ├── addon-tiller.yaml
+        │   └── custom-channel-manifest.yaml
+        └── variables.tf
 ```
-
 
 ## Cleaning up
 
