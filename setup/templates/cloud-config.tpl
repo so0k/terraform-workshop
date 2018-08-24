@@ -84,7 +84,7 @@ write_files:
         sigil -p -f kops/env.tpl aws_key=${aws_key} aws_secret=${aws_secret} state_bucket_name=${state_bucket_name} cluster_name=${cluster_name} > kops/.env
         mkdir -p kops/manifests
         sigil -p -f kops/cluster.yaml.tpl cluster_name=${cluster_name} addons_bucket_name=${addons_bucket_name} > kops/manifests/${cluster_name}.yaml
-        sigil -p -f kops/main.tf.tpl aws_region=${aws_region} cluster_name=${cluster_name} addons_bucket_name=${addons_bucket_name} > kops/main.tf
+        sigil -p -f kops/main.tf.tpl dns_zone=${dns_zone} aws_region=${aws_region} cluster_name=${cluster_name} addons_bucket_name=${addons_bucket_name} > kops/main.tf
         rm *.tpl
         rm rds/*.tpl
         # rm dns/*.tpl

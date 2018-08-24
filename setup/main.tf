@@ -212,6 +212,7 @@ data "template_file" "cloudconfig" {
     state_bucket_name      = "${element(aws_s3_bucket.state_store.*.id,count.index)}"
     cluster_name           = "${var.users[count.index]}-cluster.${var.subdomain}.${var.domain}.${var.tld}"
     addons_bucket_name     = "${element(aws_s3_bucket.addons_store.*.id,count.index)}"
+    dns_zone               = "${var.subdomain}.${var.domain}.${var.tld}"
   }
 }
 

@@ -70,3 +70,29 @@ resource "aws_security_group_rule" "allow_all_ingress_on_nodes" {
   security_group_id = "\${element(module.kops.node_security_group_ids,count.index)}"
   depends_on        = ["module.kops"]
 }
+
+## Certs for ALB
+
+data "aws_route53_zone" "training" {
+  name         = "$dns_zone."
+  private_zone = false
+}
+
+resource "aws_acm_certificate" "training_wildcard" {
+  domain_name       = "*.$dns_zone"
+  validation_method = "DNS"
+}
+
+resource "aws_route53_record" "training_wildcard_cert_validation" {
+  name    = "${lookup(aws_acm_certificate.training_wildcard.domain_validation_options[0],"resource_record_name")}"
+  type    = "${lookup(aws_acm_certificate.training_wildcard.domain_validation_options[0],"resource_record_type")}"
+  zone_id = "${data.aws_route53_zone.training.id}"
+  records = ["${lookup(aws_acm_certificate.training_wildcard.domain_validation_options[0],"resource_record_value")}"]
+  ttl     = 60
+}
+
+resource "aws_acm_certificate_validation" "training_wildcard" {
+  certificate_arn         = "${aws_acm_certificate.training_wildcard.arn}"
+  validation_record_fqdns = ["${aws_route53_record.training_wildcard_cert_validation.fqdn}"]
+}
+
