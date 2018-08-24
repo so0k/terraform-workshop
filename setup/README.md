@@ -34,3 +34,8 @@ ssh-keygen -R <dns>
 ssh -i generated/<priv-key> ubuntu@<dns>
 tail -f /var/log/cloud-init-output.log
 ```
+
+# TODO:
+
+- Use `https://github.com/Oxalide/terraform-fargate-example` for tf-modules instead of the ec2-instance with docker...
+
