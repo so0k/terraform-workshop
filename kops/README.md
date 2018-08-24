@@ -52,10 +52,6 @@ kops create secret --name=${CLUSTER_NAME} sshpublickey admin -i ~/.ssh/kops_key.
 ### Generate Terraform config
 
 ```bash
-kops update cluster --name ${CLUSTER_NAME} \
-  --target=terraform \
-  --out=modules/clusters/${CLUSTER_NAME} 
-
 kops update cluster \
 		--name ${CLUSTER_NAME} \
 		--out=modules/kops \
@@ -130,6 +126,8 @@ the creation of all addons in the channel.
 
 ### Deploy upstream channels
 
+**NOTE**: These channels were deployed as part of cluster bootstrap
+
 There are several upstream channels such as dashboard and heapster, we may install these as follows:
 
 ```bash
@@ -164,31 +162,29 @@ Once we accepted the untrusted root cluster certificate, we can get a list of ba
 kubectl config view -o json | jq '[.users[] | select(.name | contains("basic-auth")) | {(.name): {(.user.username): .user.password}}]'
 ```
 
-### Deploy custom Honestbee - beekeeper channel
+### Deploy custom channels
 
-As Honestbee depends on Helm for all of its deployments, we created our own addons channel called `beekeeper` to bootstrap Helm and 
-other core Kubernetes addons (namespaces, service accounts, registry secrets, rbac, ...). On your workstation are sample addons for
-practice purposes.
+As companies depend on Helm for all of its deployments, Helm should be bootstrapped as an addon in a custom channel.
 
-```
-beekeeper/
-├── addons.yaml
-├── kube-state-metrics.addons.k8s.io
-│   ├── README.md
-│   ├── v1.0.1.yaml
-│   └── v1.1.0-rc.0.yaml
-├── namespaces.honestbee.io
-│   └── k8s-1.7.yaml
-└── tiller.addons.k8s.io
-    └── k8s-1.7.yaml
-```
+other core Kubernetes addons  could be: namespaces, service accounts, registry secrets, rbac roles/service accounts, ....
 
-To apply this channel to the cluster, run the following command:
+On your workstation a Terraform module exists which renders and uploads custom addons to S3 for cluster bootstrap.
 
 ```
-channels apply channel -f beekeeper/addons.yaml --yes
+.
+├── main.tf
+├── manifests
+│   └── rider01-cluster.training.swatrider.com.yaml
+└── modules
+    └── channels
+        ├── main.tf
+        ├── templates
+        │   ├── addon-ingress.yaml
+        │   ├── addon-state-metrics.yaml
+        │   ├── addon-tiller.yaml
+        │   └── custom-channel-manifest.yaml
+        └── variables.tf
 ```
-
 
 ## Cleaning up
 
