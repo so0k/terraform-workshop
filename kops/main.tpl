@@ -18,7 +18,7 @@ resource "aws_security_group" "ingress" {
   description = "ingress.$cluster_name"
   vpc_id      = "\${data.aws_vpc.default.id}"
 
-  tags = "${
+  tags = "\${
     map(
       "kubernetes.io/cluster/$cluster_name", "owned",
       "kubernetes:application", "kube-ingress-aws-controller"
