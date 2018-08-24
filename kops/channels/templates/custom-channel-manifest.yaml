@@ -1,0 +1,26 @@
+kind: Addons
+metadata:
+  name: swatmobile
+spec:
+  addons:
+  - name: tiller.swatmobile.io                 # bootstrap rbac / tiller
+    manifest: tiller.swatmobile.io/k8s-1.9.yaml
+    kubernetesVersion: '>=1.9.0'
+    id: k8s-1.9
+    selector:
+      k8s-addon: tiller.swatmobile.io
+    version: 0.0.9
+  - name: ingress.swatmobile.io                 # bootstrap ingress controller
+    manifest: ingress.swatmobile.io/k8s-1.9.yaml
+    kubernetesVersion: '>=1.9.0'
+    id: k8s-1.9
+    selector:
+      k8s-addon: ingress.swatmobile.io
+    version: 0.0.5
+  - name: state-metrics.swatmobile.io           # bootstrap ingress controller
+    manifest: state-metrics.swatmobile.io/k8s-1.9.yaml
+    kubernetesVersion: '>=1.9.0'
+    id: k8s-1.9
+    selector:
+      k8s-addon: state-metrics.swatmobile.io
+    version: 0.0.2

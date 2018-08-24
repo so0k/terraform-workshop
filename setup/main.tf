@@ -153,22 +153,10 @@ resource "aws_iam_user" "aws_users" {
   force_destroy = true
 }
 
-resource "aws_iam_user_policy_attachment" "aws_users_ec2" {
+resource "aws_iam_user_policy_attachment" "aws_users" {
   count      = "${length(var.users)}"
   user       = "${element(aws_iam_user.aws_users.*.name,count.index)}"
-  policy_arn = "${element(aws_iam_policy.trainee_ec2.*.arn,count.index)}"
-}
-
-resource "aws_iam_user_policy_attachment" "aws_users_rds_ro" {
-  count      = "${length(var.users)}"
-  user       = "${element(aws_iam_user.aws_users.*.name,count.index)}"
-  policy_arn = "arn:aws:iam::aws:policy/AmazonRDSReadOnlyAccess"
-}
-
-resource "aws_iam_user_policy_attachment" "aws_users_rds" {
-  count      = "${length(var.users)}"
-  user       = "${element(aws_iam_user.aws_users.*.name,count.index)}"
-  policy_arn = "${element(aws_iam_policy.trainee_rds.*.arn,count.index)}"
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
 resource "aws_iam_access_key" "aws_keys" {
@@ -203,12 +191,12 @@ data "template_file" "cloudconfig" {
   vars {
     tf_version             = "0.11.7"
     sigil_version          = "0.4.0"
-    kubectl_version        = "v1.9.3"
-    helm_version           = "v2.8.2"
+    kubectl_version        = "v1.9.10"
+    helm_version           = "v2.10.0"
     docker_version         = "18.06.0~ce~3-0~ubuntu"
     usql_version           = "0.5.0"
     consul_version         = "1.0.0"
-    kops_version           = "1.9.0"
+    kops_version           = "1.9.2"
     git_repo               = "https://github.com/so0k/terraform-workshop.git"
     ws_dir                 = "terraform-workshop"
     user                   = "${var.users[count.index]}"
@@ -221,6 +209,8 @@ data "template_file" "cloudconfig" {
     subnet_a               = "${data.aws_subnet.default_a.id}"
     subnet_b               = "${data.aws_subnet.default_b.id}"
     ami                    = "${data.aws_ami.ubuntu.id}"
+    state_bucket_name      = "${element(aws_s3_bucket.state_store.*.id,count.index)}"
+    cluster_name           = "${var.users[count.index]}-cluster.${var.subdomain}.${var.domain}.${var.tld}"
   }
 }
 
@@ -256,6 +246,32 @@ resource "aws_instance" "workstations" {
 
   lifecycle {
     ignore_changes = ["user_data", "ami"]
+  }
+
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = "${element(tls_private_key.user-ssh-keys.*.private_key_pem, count.index)}"
+  }
+
+  provisioner "file" {
+    content     = "${element(tls_private_key.user-ssh-keys.*.private_key_pem, count.index)}"
+    destination = "/home/ubuntu/.ssh/kops_key"
+  }
+
+  provisioner "file" {
+    content     = "${element(tls_private_key.user-ssh-keys.*.public_key_openssh, count.index)}"
+    destination = "/home/ubuntu/.ssh/kops_key.pub"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mkdir ~training/.ssh",
+      "sudo mv ~ubuntu/.ssh/kops_key ~training/.ssh/",
+      "sudo mv ~ubuntu/.ssh/kops_key.pub ~training/.ssh/",
+      "sudo chown -R training:training ~training/.ssh",
+      "sudo chmod 600 ~training/.ssh/kops_key",
+    ]
   }
 }
 
